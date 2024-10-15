@@ -53,6 +53,7 @@ def watch_ocean_vng_events():
         resource = event['object']
         event_type = event['type']
         vng_spec = resource['spec']
+        print (vng_spec)
 
         if event_type in ["ADDED", "MODIFIED"]:
             apply_or_destroy_vng(vng_spec)

@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oceanvngs-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: default  # Change this if you have a different service account
+    namespace: default  # Change this to the appropriate namespace if necessary
+roleRef:
+  kind: ClusterRole
+  name: oceanvngs-role
+  apiGroup: rbac.authorization.k8s.io

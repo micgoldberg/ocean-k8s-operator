@@ -11,4 +11,4 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Run the operator
-CMD ["python", "./operator.py"]
+CMD ["python", "./ocean_operator.py"]
