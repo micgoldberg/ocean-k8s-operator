@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocean-operator
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocean-operator
+  template:
+    metadata:
+      labels:
+        app: ocean-operator
+    spec:
+      containers:
+      - name: ocean-operator
+        image: micgoldberg/ocean-operator:latest
+        imagePullPolicy: Always
+      restartPolicy: Always

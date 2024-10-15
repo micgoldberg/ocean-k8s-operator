@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ocean-vngs
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/micgoldberg/ocean-k8s-operator'
+    targetRevision: HEAD
+    path: 'ocean-vngs'  # Directory with multiple VNGs
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: spot-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  # Watches all OceanVNG resources in the cluster
+  ignoreDifferences:
+    - group: "spot.io"
+      kind: OceanVNG

@@ -1,0 +1,4 @@
+kubernetes==31.0.0
+python-terraform==0.10.1
+PyYAML==6.0
+GitPython==3.1.30
