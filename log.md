@@ -3,6 +3,12 @@ docker tag ocean-operator:latest micgoldberg/ocean-operator:latest
 docker login
 docker push micgoldberg/ocean-operator:latest
 
+echo -n 'your-spotinst-token' | base64
+echo -n 'your-spotinst-account' | base64
+
+kubectl apply -f spotinst-secret.yaml
+
+
 kubectl create namespace argocd
 export ARGOCD_VERSION=v2.12.0
 kubectl create namespace argocd

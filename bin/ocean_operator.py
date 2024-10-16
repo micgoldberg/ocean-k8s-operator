@@ -1,6 +1,7 @@
 import os
 from kubernetes import client, config, watch
 from python_terraform import *
+import base64
 
 # Configure Kubernetes client
 config.load_incluster_config()
@@ -21,6 +22,18 @@ def get_spot_credentials():
     spot_account = secret.data['account']
     return spot_token, spot_account
 
+def get_operator_credentials():
+    """Retrieve and decode Spot token and account from the Kubernetes secret."""
+    print ('in get_spot_credentials')
+    
+    secret = v1.read_namespaced_secret('spotinst-secret', 'default')
+    
+    # Decode the base64-encoded secret values
+    spot_token = base64.b64decode(secret.data['token']).decode('utf-8')
+    spot_account = base64.b64decode(secret.data['account']).decode('utf-8')
+
+    return spot_token, spot_account
+
 def apply_or_destroy_vng(vng_spec):
     """Apply or destroy VNG based on the resource spec."""
 
@@ -31,7 +44,7 @@ def apply_or_destroy_vng(vng_spec):
     name = vng_spec['name']
     spot_percentage = vng_spec['spot_percentage']
 
-    spot_token, spot_account = get_spot_credentials()
+    spot_token, spot_account = get_operator_credentials()
 
     print ('Initialize Terraform starts')
 
