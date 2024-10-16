@@ -11,9 +11,15 @@ kubectl config set-context --current --namespace=argocd # change current kube co
 
 argocd login --core
 
+kubectl apply -f oceanvngs-clusterrole.yaml
+
+kubectl apply -f oceanvngs-clusterrolebinding.yaml
+
 kubectl apply -f crd-oceanvng.yaml
 
 kubectl apply -f ocean-operator-deployment.yaml
 
 kubectl apply -f argo-cd-app.yaml
 
+
+kubectl delete -f ocean-operator-deployment.yaml

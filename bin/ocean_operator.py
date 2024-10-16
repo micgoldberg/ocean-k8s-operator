@@ -1,6 +1,6 @@
 import os
 from kubernetes import client, config, watch
-from python_terraform import Terraform
+from python_terraform import *
 
 # Configure Kubernetes client
 config.load_incluster_config()
@@ -13,13 +13,19 @@ SECRET_NAME = "ocean-controller-ocean-kubernetes-controller"
 
 def get_spot_credentials():
     """Retrieve Spot token and account from the Kubernetes secret."""
+    
+    print ('in get_spot_credentials')
+
     secret = v1.read_namespaced_secret(SECRET_NAME, NAMESPACE)
-    spot_token = secret.data['spot_token']  # Assumes base64 encoded in secret
-    spot_account = secret.data['spot_account']
+    spot_token = secret.data['token']  # Assumes base64 encoded in secret
+    spot_account = secret.data['account']
     return spot_token, spot_account
 
 def apply_or_destroy_vng(vng_spec):
     """Apply or destroy VNG based on the resource spec."""
+
+    print ('in apply_or_destroy_vng')
+
     action = vng_spec['action']
     ocean_id = vng_spec['ocean_id']
     name = vng_spec['name']
@@ -27,8 +33,18 @@ def apply_or_destroy_vng(vng_spec):
 
     spot_token, spot_account = get_spot_credentials()
 
+    print ('Initialize Terraform starts')
+
     # Initialize Terraform
-    tf = Terraform()
+    terraform_dir = '/usr/src/app/terraform'
+    # tf = Terraform(terraform_dir)
+
+    print ('IsFlagged is ' + str(IsFlagged))
+
+    # tf.init(capture_output=False, reconfigure=IsFlagged)
+
+    print ('Initialize Terraform completed')
+
     tf_vars = {
         "spotinst_token": spot_token,
         "spotinst_account": spot_account,
@@ -37,12 +53,17 @@ def apply_or_destroy_vng(vng_spec):
         "spot_percentage": spot_percentage
     }
 
+    print ('before if')
+
     if action == "apply":
+        print ('in apply')
+
         print(f"Applying VNG: {name}")
-        tf.apply(var=tf_vars, capture_output=False)
+        # tf.apply(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
     elif action == "destroy":
+        print ('in destroy')
         print(f"Destroying VNG: {name}")
-        tf.destroy(var=tf_vars, capture_output=False)
+        # tf.destroy(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
     else:
         print(f"Unknown action: {action}")
 

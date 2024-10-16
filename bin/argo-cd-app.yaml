@@ -11,7 +11,7 @@ spec:
     path: 'ocean-vngs'  # Directory with multiple VNGs
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: spot-system
+    namespace: default
   syncPolicy:
     automated:
       prune: true

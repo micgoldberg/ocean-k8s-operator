@@ -1,14 +1,24 @@
-# Use an official Python runtime as a parent image
+# Start from a base image with Python installed
 FROM python:3.10-slim
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy the current directory contents into the container at /usr/src/app
-COPY . .
-
-# Install any needed packages specified in requirements.txt
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Run the operator
-CMD ["python", "./ocean_operator.py"]
+# Install Terraform
+RUN apt-get update && \
+    apt-get install -y wget unzip git && \
+    wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip && \
+    unzip /tmp/terraform.zip -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/terraform && \
+    rm /tmp/terraform.zip
+
+# Copy the operator code and Terraform configuration files into the image
+COPY ocean_operator.py .
+COPY terraform/ ./terraform/
+
+# Set the entrypoint for the container
+ENTRYPOINT ["python", "./ocean_operator.py"]
