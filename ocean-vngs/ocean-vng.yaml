@@ -6,4 +6,4 @@ spec:
   name: "ExampleVNG"
   ocean_id: "o-66d8846c"
   spot_percentage: 5
-  action: "apply"  # Change to "destroy" when needed
+  action: "destroy"  # Change to "apply" or "destroy" when needed
