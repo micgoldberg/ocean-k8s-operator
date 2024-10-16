@@ -12,19 +12,9 @@ custom_api = client.CustomObjectsApi()
 NAMESPACE = "spot-system"
 SECRET_NAME = "ocean-controller-ocean-kubernetes-controller"
 
-def get_spot_credentials():
-    """Retrieve Spot token and account from the Kubernetes secret."""
-
-    print ('in get_spot_credentials')
-
-    secret = v1.read_namespaced_secret(SECRET_NAME, NAMESPACE)
-    spot_token = secret.data['token']  # Assumes base64 encoded in secret
-    spot_account = secret.data['account']
-    return spot_token, spot_account
-
 def get_operator_credentials():
     """Retrieve and decode Spot token and account from the Kubernetes secret."""
-    print ('in get_spot_credentials')
+    print ('in get_operator_credentials')
     
     secret = v1.read_namespaced_secret('spotinst-secret', 'default')
     
@@ -34,9 +24,22 @@ def get_operator_credentials():
 
     return spot_token, spot_account
 
-def apply_or_destroy_vng(vng_spec):
-    """Apply or destroy VNG based on the resource spec."""
+# Initialize Terraform once
+def init_terraform(terraform_dir):
+    """Initialize Terraform and return the Terraform object."""
+    tf = Terraform(working_dir=terraform_dir)
+    print('Initializing Terraform...')
+    
+    # Initialize Terraform
+    return_code, stdout, stderr = tf.init(capture_output=False, reconfigure=True)
+    if return_code != 0:
+        print(f"Error initializing Terraform: {stderr}")
+        raise Exception("Failed to initialize Terraform")
+    
+    return tf
 
+def apply_or_destroy_vng(tf, vng_spec):
+    """Apply or destroy VNG based on the resource spec."""
     print ('in apply_or_destroy_vng')
 
     action = vng_spec['action']
@@ -45,18 +48,6 @@ def apply_or_destroy_vng(vng_spec):
     spot_percentage = vng_spec['spot_percentage']
 
     spot_token, spot_account = get_operator_credentials()
-
-    print ('Initialize Terraform starts')
-
-    # Initialize Terraform
-    terraform_dir = '/usr/src/app/terraform'
-    # tf = Terraform(terraform_dir)
-
-    print ('IsFlagged is ' + str(IsFlagged))
-
-    # tf.init(capture_output=False, reconfigure=IsFlagged)
-
-    print ('Initialize Terraform completed')
 
     tf_vars = {
         "spotinst_token": spot_token,
@@ -67,31 +58,35 @@ def apply_or_destroy_vng(vng_spec):
     }
 
     print ('before if')
-
+    
     if action == "apply":
         print ('in apply')
-
         print(f"Applying VNG: {name}")
-        tf = Terraform(working_dir=terraform_dir)
-        tf.fmt(diff=True)
-        return_code, stdout, stderr = tf.init(capture_output=False, reconfigure=IsFlagged)
-        return_code, stdout, stderr = tf.plan_cmd(var=tf_vars, capture_output=False, out="init.tfplan")
-        return_code, stdout, stderr = tf.apply_cmd("init.tfplan", capture_output=False, parallelism=1)
 
-        # tf.apply(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
+        # Create or update the Terraform plan
+        return_code, stdout, stderr = tf.plan_cmd(var=tf_vars, capture_output=False, out="init.tfplan")
+        if return_code != 0:
+            print(f"Error creating Terraform plan: {stderr}")
+            raise Exception("Failed to create Terraform plan")
+        
+        return_code, stdout, stderr = tf.apply_cmd("init.tfplan", capture_output=False, parallelism=1)
+        if return_code != 0:
+            print(f"Error applying Terraform: {stderr}")
+            raise Exception("Failed to apply Terraform")
+
     elif action == "destroy":
         print ('in destroy')
         print(f"Destroying VNG: {name}")
-        # tf.destroy(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
-        tf = Terraform(working_dir=terraform_dir)
-        tf.fmt(diff=True)
-        return_code, stdout, stderr = tf.init(capture_output=False, reconfigure=IsFlagged)
-        # return_code, stdout, stderr = tf.plan_cmd(var=tf_vars, capture_output=False, out="init.tfplan")
-        return_code, stdout, stderr = tf.destroy_cmd(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
+
+        return_code, stdout, stderr = tf.destroy_cmd(var=tf_vars, capture_output=False, auto_approve=True)
+        if return_code != 0:
+            print(f"Error destroying Terraform resources: {stderr}")
+            raise Exception("Failed to destroy Terraform resources")
+
     else:
         print(f"Unknown action: {action}")
 
-def watch_ocean_vng_events():
+def watch_ocean_vng_events(tf):
     """Watch for OceanVNG resource events and process them."""
     print ('in watch_ocean_vng_events')
     w = watch.Watch()
@@ -104,12 +99,14 @@ def watch_ocean_vng_events():
         print (vng_spec)
 
         if event_type in ["ADDED", "MODIFIED"]:
-            apply_or_destroy_vng(vng_spec)
+            apply_or_destroy_vng(tf, vng_spec)
         elif event_type == "DELETED":
             print(f"VNG resource deleted: {vng_spec['name']}")
             vng_spec['action'] = "destroy"
-            apply_or_destroy_vng(vng_spec)
+            apply_or_destroy_vng(tf, vng_spec)
 
 if __name__ == "__main__":
     print ('in main')
-    watch_ocean_vng_events()
+    terraform_dir = '/usr/src/app/terraform'
+    tf = init_terraform(terraform_dir)
+    watch_ocean_vng_events(tf)
