@@ -84,7 +84,10 @@ def apply_or_destroy_vng(vng_spec):
         print(f"Destroying VNG: {name}")
         # tf.destroy(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
         tf = Terraform(working_dir=terraform_dir)
-        return_code, stdout, stderr = tf.destroy_cmd(capture_output=False, auto_approve=IsFlagged)
+        tf.fmt(diff=True)
+        return_code, stdout, stderr = tf.init(capture_output=False, reconfigure=IsFlagged)
+        # return_code, stdout, stderr = tf.plan_cmd(var=tf_vars, capture_output=False, out="init.tfplan")
+        return_code, stdout, stderr = tf.destroy_cmd(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
     else:
         print(f"Unknown action: {action}")
 
