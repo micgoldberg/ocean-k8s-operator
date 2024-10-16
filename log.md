@@ -32,3 +32,5 @@ kubectl apply -f ocean-operator-deployment.yaml
 
 
 kubectl delete -f ocean-operator-deployment.yaml
+
+argocd app sync ocean-vngs
