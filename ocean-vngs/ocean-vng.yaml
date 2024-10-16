@@ -5,5 +5,5 @@ metadata:
 spec:
   name: "ExampleVNG"
   ocean_id: "o-ff616ccb"
-  spot_percentage: 20
+  spot_percentage: 15
   action: "apply"  # Change to "destroy" when needed

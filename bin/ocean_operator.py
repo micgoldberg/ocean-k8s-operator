@@ -13,7 +13,7 @@ SECRET_NAME = "ocean-controller-ocean-kubernetes-controller"
 
 def get_spot_credentials():
     """Retrieve Spot token and account from the Kubernetes secret."""
-    
+
     print ('in get_spot_credentials')
 
     secret = v1.read_namespaced_secret(SECRET_NAME, NAMESPACE)
@@ -59,17 +59,28 @@ def apply_or_destroy_vng(vng_spec):
         print ('in apply')
 
         print(f"Applying VNG: {name}")
+        tf = Terraform(working_dir=terraform_dir)
+        tf.fmt(diff=True)
+        return_code, stdout, stderr = tf.init(capture_output=False, reconfigure=IsFlagged)
+        return_code, stdout, stderr = tf.plan_cmd(var=tf_vars, capture_output=False, out="init.tfplan")
+        return_code, stdout, stderr = tf.apply_cmd("init.tfplan", capture_output=False, parallelism=1)
+
         # tf.apply(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
     elif action == "destroy":
         print ('in destroy')
         print(f"Destroying VNG: {name}")
         # tf.destroy(var=tf_vars, capture_output=False, auto_approve=IsFlagged)
+        tf = Terraform(working_dir=terraform_dir)
+        return_code, stdout, stderr = tf.destroy_cmd(capture_output=False, auto_approve=IsFlagged)
     else:
         print(f"Unknown action: {action}")
 
 def watch_ocean_vng_events():
     """Watch for OceanVNG resource events and process them."""
+    print ('in watch_ocean_vng_events')
     w = watch.Watch()
+    print ('after watch.Watch')
+
     for event in w.stream(custom_api.list_cluster_custom_object, group="spot.io", version="v1", plural="oceanvngs"):
         resource = event['object']
         event_type = event['type']
@@ -84,4 +95,5 @@ def watch_ocean_vng_events():
             apply_or_destroy_vng(vng_spec)
 
 if __name__ == "__main__":
+    print ('in main')
     watch_ocean_vng_events()
